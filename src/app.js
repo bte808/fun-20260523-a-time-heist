@@ -33,7 +33,8 @@ const state = {
   moves: 0,
   startedAt: Date.now(),
   results: [],
-  feedback: []
+  feedback: [],
+  caseLocked: false
 };
 
 function currentCase() {
@@ -47,6 +48,7 @@ function startCase(index) {
   state.moves = 0;
   state.startedAt = Date.now();
   state.feedback = [];
+  state.caseLocked = false;
   resultPanel.textContent = "";
   render();
 }
@@ -66,8 +68,8 @@ function render() {
     })
   );
   timeline.replaceChildren(...state.order.map((id, index) => renderCard(caseFile, id, index)));
-  lockButton.disabled = false;
-  resetButton.disabled = false;
+  lockButton.disabled = state.caseLocked;
+  resetButton.disabled = state.caseLocked;
 }
 
 function renderCard(caseFile, artifactId, index) {
@@ -84,6 +86,7 @@ function renderCard(caseFile, artifactId, index) {
   selectButton.className = "artifact-main";
   selectButton.dataset.action = "select";
   selectButton.dataset.id = artifact.id;
+  selectButton.disabled = state.caseLocked;
   selectButton.setAttribute("aria-label", `Select ${artifact.name}`);
   selectButton.innerHTML = `
     <span class="slot">${index + 1}</span>
@@ -101,6 +104,9 @@ function renderCard(caseFile, artifactId, index) {
     <span>${feedback ? feedback.state : "sort"}</span>
     <button type="button" data-action="right" data-index="${index}" aria-label="Move ${artifact.name} later">&gt;</button>
   `;
+  controls.querySelectorAll("button").forEach((button) => {
+    button.disabled = state.caseLocked;
+  });
 
   item.append(selectButton, controls);
   return item;
@@ -132,6 +138,9 @@ function renderMotif(motif) {
 }
 
 function handleTimelineClick(event) {
+  if (state.caseLocked) {
+    return;
+  }
   const button = event.target.closest("button");
   if (!button) {
     return;
@@ -155,6 +164,9 @@ function handleTimelineClick(event) {
 }
 
 function selectArtifact(artifactId) {
+  if (state.caseLocked) {
+    return;
+  }
   if (!state.selectedId) {
     state.selectedId = artifactId;
     render();
@@ -173,17 +185,20 @@ function selectArtifact(artifactId) {
 }
 
 function lockTimeline() {
+  if (state.caseLocked) {
+    return;
+  }
   const elapsed = Math.round((Date.now() - state.startedAt) / 1000);
   const result = evaluateOrder(currentCase(), state.order, state.moves, elapsed);
   state.feedback = result.feedback;
   if (result.solved) {
+    state.caseLocked = true;
+    state.selectedId = null;
     state.results.push({ ...result, caseTitle: currentCase().title });
     resultPanel.innerHTML = `
       <strong>Clean lock: ${result.score} pts.</strong>
       <span>${state.caseIndex + 1 === cases.length ? "All cases rebuilt." : "Next cabinet is ready."}</span>
     `;
-    lockButton.disabled = true;
-    resetButton.disabled = true;
     render();
     window.setTimeout(() => {
       if (state.caseIndex + 1 === cases.length) {
@@ -207,6 +222,7 @@ function resetCase() {
   state.moves = 0;
   state.startedAt = Date.now();
   state.feedback = [];
+  state.caseLocked = false;
   resultPanel.textContent = "";
   render();
 }

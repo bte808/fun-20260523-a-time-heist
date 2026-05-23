@@ -12,6 +12,7 @@ Time Heist Shuffle is a quick timeline puzzle. A museum time heist has scrambled
 - Presents three compact cases with six artifact cards each.
 - Lets the player select two cards to swap, or move one card earlier/later.
 - Scores each locked timeline with exact, near, and off-position feedback.
+- Freezes a clean lock while the next case opens so repeated taps cannot double-count a timeline.
 - Generates a short result text that can be copied at the end.
 
 ## Why It Is Useful
@@ -59,6 +60,10 @@ You can also serve the folder with any static file server.
 npm test
 npm run check
 ```
+
+## License
+
+MIT
 
 ## Possible Extensions
 
