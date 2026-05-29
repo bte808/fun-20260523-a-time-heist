@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f05d42">
     <title>Time Heist Shuffle</title>
-    <link rel="stylesheet" href="src/styles.css?v=time-heist-20260524">
+    <link rel="stylesheet" href="src/styles.css?v=time-heist-20260529">
   </head>
   <body>
     <main class="shell">
       <section class="topbar" aria-label="Game status">
         <div>
-          <p class="eyebrow">Daily case file A</p>
+          <p class="eyebrow" id="seedLabel">Daily case file</p>
           <h1>Time Heist Shuffle</h1>
         </div>
         <div class="score-strip" aria-live="polite">
@@ -39,6 +39,7 @@
             <button id="lockButton" class="primary-button" type="button">Lock timeline</button>
             <button id="resetButton" class="ghost-button" type="button">Reshuffle case</button>
           </div>
+          <p id="controlHint" class="control-hint" aria-live="polite"></p>
         </section>
       </section>
 
@@ -54,6 +55,6 @@
       </section>
     </main>
 
-    <script type="module" src="src/app.js?v=time-heist-20260524"></script>
+    <script type="module" src="src/app.js?v=time-heist-20260529"></script>
   </body>
 </html>

@@ -1,4 +1,5 @@
 export const runDate = "2026-05-23";
+export const defaultShareUrl = "https://github.com/bte808/fun-20260523-a-time-heist";
 
 export const cases = [
   {
@@ -201,18 +202,32 @@ export function getArtifact(caseFile, artifactId) {
   return artifact;
 }
 
-export function buildInitialOrder(caseFile) {
+export function buildInitialOrder(caseFile, seed = runDate) {
   const ids = orderedArtifacts(caseFile).map((artifact) => artifact.id);
   const shuffled = [...ids];
-  let seed = hashSeed(caseFile.id);
+  let hash = hashSeed(buildCaseSeed(caseFile, seed));
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    const swapIndex = seed % (index + 1);
+    hash = (hash * 1664525 + 1013904223) >>> 0;
+    const swapIndex = hash % (index + 1);
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
 
   return shuffled.join("|") === ids.join("|") ? shuffled.reverse() : shuffled;
+}
+
+export function normalizeSeed(value = runDate) {
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return normalized || runDate;
+}
+
+export function buildCaseSeed(caseFile, seed = runDate) {
+  return `${normalizeSeed(seed)}:${caseFile.id}`;
 }
 
 function hashSeed(value) {
@@ -277,11 +292,20 @@ export function evaluateOrder(caseFile, order, moves = 0, elapsedSeconds = 0) {
   };
 }
 
-export function buildShareText(results) {
+export function buildReplayUrl(baseUrl, seed = runDate) {
+  const url = new URL(baseUrl);
+  url.searchParams.set("seed", normalizeSeed(seed));
+  url.hash = "";
+  return url.toString();
+}
+
+export function buildShareText(results, options = {}) {
+  const { seed = runDate, replayUrl = defaultShareUrl } = options;
+  const normalizedSeed = normalizeSeed(seed);
   const total = results.reduce((sum, result) => sum + result.score, 0);
   const solved = results.filter((result) => result.solved).length;
   const marks = results
     .map((result) => (result.solved ? "OK" : `${result.exact}/6`))
     .join(" ");
-  return `Time Heist Shuffle ${runDate}\n${solved}/3 cases solved, ${total} pts\n${marks}\nhttps://github.com/bte808/fun-20260523-a-time-heist`;
+  return `Time Heist Shuffle ${runDate}\n${solved}/3 cases solved, ${total} pts\n${marks}\nSeed: ${normalizedSeed}\nReplay: ${replayUrl}`;
 }

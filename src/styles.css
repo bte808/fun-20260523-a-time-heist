@@ -314,6 +314,28 @@ h2 {
   gap: 10px;
 }
 
+.control-hint {
+  min-height: 48px;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: #f7f8f4;
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+}
+
+.control-hint[data-tone="success"] {
+  color: #1f6f3e;
+  border-color: #8cc7a0;
+  background: #eef9f1;
+}
+
+.control-hint[data-tone="warning"] {
+  color: #8a4e00;
+  border-color: #d8b160;
+  background: #fff8df;
+}
+
 .primary-button,
 .ghost-button {
   min-height: 44px;
@@ -333,6 +355,14 @@ h2 {
   color: var(--ink);
   background: #ffffff;
   border: 2px solid #25222a;
+}
+
+.artifact-main:focus-visible,
+.card-controls button:focus-visible,
+.primary-button:focus-visible,
+.ghost-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .summary {
@@ -422,5 +452,9 @@ h2 {
 
   .actions {
     display: grid;
+  }
+
+  .control-hint {
+    min-height: 64px;
   }
 }

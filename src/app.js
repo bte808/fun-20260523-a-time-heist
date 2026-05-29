@@ -1,16 +1,19 @@
 import {
+  buildReplayUrl,
   buildInitialOrder,
   buildShareText,
   cases,
   evaluateOrder,
   getArtifact,
   moveItem,
+  normalizeSeed,
   orderedArtifacts,
   runDate,
   swapItems
 } from "./game.js";
 
 const timeline = document.querySelector("#timeline");
+const seedLabel = document.querySelector("#seedLabel");
 const caseProgress = document.querySelector("#caseProgress");
 const scoreTotal = document.querySelector("#scoreTotal");
 const caseTitle = document.querySelector("#caseTitle");
@@ -19,6 +22,7 @@ const clueList = document.querySelector("#clueList");
 const resultPanel = document.querySelector("#resultPanel");
 const lockButton = document.querySelector("#lockButton");
 const resetButton = document.querySelector("#resetButton");
+const controlHint = document.querySelector("#controlHint");
 const summary = document.querySelector("#summary");
 const summaryTitle = document.querySelector("#summaryTitle");
 const summaryText = document.querySelector("#summaryText");
@@ -27,6 +31,7 @@ const copyButton = document.querySelector("#copyButton");
 const restartButton = document.querySelector("#restartButton");
 
 const state = {
+  seed: resolveSeed(),
   caseIndex: 0,
   order: [],
   selectedId: null,
@@ -37,13 +42,30 @@ const state = {
   caseLocked: false
 };
 
+function resolveSeed() {
+  const url = new URL(window.location.href);
+  return normalizeSeed(url.searchParams.get("seed") ?? runDate);
+}
+
+function currentReplayUrl() {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  return buildReplayUrl(url.toString(), state.seed);
+}
+
+function setStatus(message, tone = "info") {
+  controlHint.textContent = message;
+  controlHint.dataset.tone = tone;
+}
+
 function currentCase() {
   return cases[state.caseIndex];
 }
 
 function startCase(index) {
   state.caseIndex = index;
-  state.order = buildInitialOrder(currentCase());
+  state.order = buildInitialOrder(currentCase(), state.seed);
   state.selectedId = null;
   state.moves = 0;
   state.startedAt = Date.now();
@@ -51,11 +73,16 @@ function startCase(index) {
   state.caseLocked = false;
   resultPanel.textContent = "";
   render();
+  setStatus(
+    `Case ${index + 1} loaded. Select two cards to swap, or use arrow keys to move the selected card.`,
+    "info"
+  );
 }
 
 function render() {
   const caseFile = currentCase();
   const totalScore = state.results.reduce((sum, result) => sum + result.score, 0);
+  seedLabel.textContent = state.seed === runDate ? `Daily case file ${runDate}` : `Replay seed ${state.seed}`;
   caseProgress.textContent = `Case ${state.caseIndex + 1} / ${cases.length}`;
   scoreTotal.textContent = `${totalScore} pts`;
   caseTitle.textContent = caseFile.title;
@@ -152,14 +179,7 @@ function handleTimelineClick(event) {
   if (action === "left" || action === "right") {
     const index = Number(button.dataset.index);
     const direction = action === "left" ? -1 : 1;
-    const nextIndex = index + direction;
-    const nextOrder = moveItem(state.order, index, nextIndex);
-    if (nextOrder.join("|") !== state.order.join("|")) {
-      state.order = nextOrder;
-      state.feedback = [];
-      state.moves += 1;
-      render();
-    }
+    moveArtifactAtIndex(index, direction);
   }
 }
 
@@ -167,21 +187,26 @@ function selectArtifact(artifactId) {
   if (state.caseLocked) {
     return;
   }
+  const artifact = getArtifact(currentCase(), artifactId);
   if (!state.selectedId) {
     state.selectedId = artifactId;
     render();
+    setStatus(`${artifact.name} selected. Choose another card to swap, or press arrow keys to move it.`, "info");
     return;
   }
   if (state.selectedId === artifactId) {
     state.selectedId = null;
     render();
+    setStatus(`${artifact.name} selection cleared.`, "info");
     return;
   }
+  const previousArtifact = getArtifact(currentCase(), state.selectedId);
   state.order = swapItems(state.order, state.selectedId, artifactId);
   state.selectedId = null;
   state.feedback = [];
   state.moves += 1;
   render();
+  setStatus(`Swapped ${previousArtifact.name} with ${artifact.name}.`, "info");
 }
 
 function lockTimeline() {
@@ -200,6 +225,7 @@ function lockTimeline() {
       <span>${state.caseIndex + 1 === cases.length ? "All cases rebuilt." : "Next cabinet is ready."}</span>
     `;
     render();
+    setStatus(`Solved ${currentCase().title} for ${result.score} points.`, "success");
     window.setTimeout(() => {
       if (state.caseIndex + 1 === cases.length) {
         finishGame();
@@ -214,10 +240,11 @@ function lockTimeline() {
     <span>Move the marked cards and lock again.</span>
   `;
   render();
+  setStatus("Lock checked. Red cards are off, amber cards are one slot away.", "warning");
 }
 
 function resetCase() {
-  state.order = buildInitialOrder(currentCase());
+  state.order = buildInitialOrder(currentCase(), state.seed);
   state.selectedId = null;
   state.moves = 0;
   state.startedAt = Date.now();
@@ -225,15 +252,20 @@ function resetCase() {
   state.caseLocked = false;
   resultPanel.textContent = "";
   render();
+  setStatus("Case reshuffled with the same replay seed.", "info");
 }
 
 function finishGame() {
-  const share = buildShareText(state.results);
+  const share = buildShareText(state.results, {
+    seed: state.seed,
+    replayUrl: currentReplayUrl()
+  });
   const total = state.results.reduce((sum, result) => sum + result.score, 0);
   summary.hidden = false;
   summaryTitle.textContent = `Recovered ${state.results.length} timelines`;
   summaryText.textContent = `Final audit for ${runDate}: ${total} points across ${cases.length} museum cases.`;
   shareText.value = share;
+  copyButton.textContent = "Copy result";
   document.querySelector(".game-layout").hidden = true;
   document.querySelector(".topbar").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -251,11 +283,78 @@ async function copyShareText() {
 function restartGame() {
   state.results = [];
   summary.hidden = true;
+  copyButton.textContent = "Copy result";
   document.querySelector(".game-layout").hidden = false;
   startCase(0);
 }
 
+function moveArtifactAtIndex(index, direction) {
+  const artifactId = state.order[index];
+  const artifact = getArtifact(currentCase(), artifactId);
+  const nextIndex = index + direction;
+  const nextOrder = moveItem(state.order, index, nextIndex);
+
+  if (nextOrder.join("|") === state.order.join("|")) {
+    const edge = direction < 0 ? "earliest" : "latest";
+    setStatus(`${artifact.name} is already at the ${edge} visible slot.`, "warning");
+    return false;
+  }
+
+  state.order = nextOrder;
+  state.feedback = [];
+  state.moves += 1;
+  if (state.selectedId === artifactId) {
+    state.selectedId = artifactId;
+  }
+  render();
+  setStatus(`${artifact.name} moved ${direction < 0 ? "earlier" : "later"}.`, "info");
+  return true;
+}
+
+function handleTimelineKeydown(event) {
+  if (state.caseLocked) {
+    return;
+  }
+
+  if (event.key === "Escape" && state.selectedId) {
+    state.selectedId = null;
+    render();
+    setStatus("Selection cleared.", "info");
+    event.preventDefault();
+    return;
+  }
+
+  const focusButton = event.target.closest('[data-action="select"]');
+  const activeId = state.selectedId ?? focusButton?.dataset.id;
+  if (!activeId) {
+    return;
+  }
+
+  let direction = 0;
+  if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    direction = -1;
+  }
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    direction = 1;
+  }
+  if (!direction) {
+    return;
+  }
+
+  if (!state.selectedId) {
+    state.selectedId = activeId;
+  }
+
+  event.preventDefault();
+  const fromIndex = state.order.indexOf(activeId);
+  if (moveArtifactAtIndex(fromIndex, direction)) {
+    const selectedButton = timeline.querySelector(`[data-action="select"][data-id="${activeId}"]`);
+    selectedButton?.focus();
+  }
+}
+
 timeline.addEventListener("click", handleTimelineClick);
+timeline.addEventListener("keydown", handleTimelineKeydown);
 lockButton.addEventListener("click", lockTimeline);
 resetButton.addEventListener("click", resetCase);
 copyButton.addEventListener("click", copyShareText);
