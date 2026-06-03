@@ -4,6 +4,7 @@ import {
   buildInitialOrder,
   buildShareText,
   cases,
+  defaultShareUrl,
   evaluateOrder,
   moveItem,
   normalizeSeed,
@@ -60,5 +61,17 @@ assert.match(share, /Time Heist Shuffle 2026-05-23/);
 assert.match(share, /3\/3 cases solved/);
 assert.match(share, /Seed: museum-night/);
 assert.match(share, /Replay: https:\/\/example.com\/time-heist\?seed=museum-night/);
+
+const defaultShare = buildShareText([], { seed: "Museum Night!" });
+assert.match(
+  defaultShare,
+  /Replay: https:\/\/bte808.github.io\/fun-20260523-a-time-heist\//,
+  "default share text points to the public demo"
+);
+assert.equal(
+  buildReplayUrl(defaultShareUrl, "Museum Night!"),
+  "https://bte808.github.io/fun-20260523-a-time-heist/?seed=museum-night",
+  "public replay urls are normalized and shareable"
+);
 
 console.log("Smoke tests passed: cases, scoring, seeded replay, moves, swaps, and share text.");

@@ -4,8 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f05d42">
+    <meta
+      name="description"
+      content="A tiny seeded browser game about rebuilding scrambled museum timelines."
+    >
     <title>Time Heist Shuffle</title>
-    <link rel="stylesheet" href="src/styles.css?v=time-heist-20260529">
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f3f6f0'/%3E%3Cpath d='M18 17h28v30H18zM24 25h16M24 33h16M24 41h10' fill='none' stroke='%23f05d42' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    >
+    <link rel="stylesheet" href="src/styles.css?v=time-heist-20260603">
   </head>
   <body>
     <main class="shell">
@@ -26,6 +34,11 @@
           <h2 id="caseTitle"></h2>
           <p id="caseBrief"></p>
           <ol id="clueList" class="clue-list"></ol>
+          <div class="challenge-card" aria-label="Replay challenge">
+            <p class="eyebrow">Replay challenge</p>
+            <code id="challengeLink"></code>
+            <button id="copyLinkButton" class="ghost-button" type="button">Copy challenge link</button>
+          </div>
           <div class="result-panel" id="resultPanel" aria-live="polite"></div>
         </aside>
 
@@ -55,6 +68,6 @@
       </section>
     </main>
 
-    <script type="module" src="src/app.js?v=time-heist-20260529"></script>
+    <script type="module" src="src/app.js?v=time-heist-20260603"></script>
   </body>
 </html>

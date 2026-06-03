@@ -3,6 +3,7 @@ import {
   buildInitialOrder,
   buildShareText,
   cases,
+  defaultShareUrl,
   evaluateOrder,
   getArtifact,
   moveItem,
@@ -19,6 +20,8 @@ const scoreTotal = document.querySelector("#scoreTotal");
 const caseTitle = document.querySelector("#caseTitle");
 const caseBrief = document.querySelector("#caseBrief");
 const clueList = document.querySelector("#clueList");
+const challengeLink = document.querySelector("#challengeLink");
+const copyLinkButton = document.querySelector("#copyLinkButton");
 const resultPanel = document.querySelector("#resultPanel");
 const lockButton = document.querySelector("#lockButton");
 const resetButton = document.querySelector("#resetButton");
@@ -49,9 +52,15 @@ function resolveSeed() {
 
 function currentReplayUrl() {
   const url = new URL(window.location.href);
+  const isLocalUrl =
+    url.protocol === "file:" ||
+    url.hostname === "localhost" ||
+    url.hostname === "127.0.0.1" ||
+    url.hostname === "[::1]";
   url.search = "";
   url.hash = "";
-  return buildReplayUrl(url.toString(), state.seed);
+  const baseUrl = isLocalUrl ? defaultShareUrl : url.toString();
+  return buildReplayUrl(baseUrl, state.seed);
 }
 
 function setStatus(message, tone = "info") {
@@ -94,6 +103,8 @@ function render() {
       return item;
     })
   );
+  challengeLink.textContent = currentReplayUrl();
+  copyLinkButton.textContent = "Copy challenge link";
   timeline.replaceChildren(...state.order.map((id, index) => renderCard(caseFile, id, index)));
   lockButton.disabled = state.caseLocked;
   resetButton.disabled = state.caseLocked;
@@ -273,10 +284,41 @@ function finishGame() {
 async function copyShareText() {
   shareText.select();
   try {
-    await navigator.clipboard.writeText(shareText.value);
+    await writeClipboardText(shareText.value);
     copyButton.textContent = "Copied";
   } catch {
     copyButton.textContent = "Text selected";
+  }
+}
+
+async function copyChallengeLink() {
+  try {
+    await writeClipboardText(currentReplayUrl());
+    copyLinkButton.textContent = "Copied";
+    setStatus(`Challenge link copied for seed ${state.seed}.`, "success");
+  } catch {
+    copyLinkButton.textContent = "Copy failed";
+    setStatus("Challenge link is visible if clipboard access is blocked.", "warning");
+  }
+}
+
+async function writeClipboardText(value) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(value);
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  document.body.append(textArea);
+  textArea.select();
+
+  try {
+    document.execCommand("copy");
+  } finally {
+    textArea.remove();
   }
 }
 
@@ -358,6 +400,7 @@ timeline.addEventListener("keydown", handleTimelineKeydown);
 lockButton.addEventListener("click", lockTimeline);
 resetButton.addEventListener("click", resetCase);
 copyButton.addEventListener("click", copyShareText);
+copyLinkButton.addEventListener("click", copyChallengeLink);
 restartButton.addEventListener("click", restartGame);
 
 startCase(0);

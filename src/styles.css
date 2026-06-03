@@ -149,6 +149,32 @@ h2 {
   padding-left: 4px;
 }
 
+.challenge-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 2px dashed var(--line);
+}
+
+.challenge-card code {
+  display: block;
+  max-width: 100%;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  background: #f7f8f4;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.challenge-card .ghost-button {
+  justify-self: start;
+}
+
 .result-panel {
   min-height: 64px;
   margin-top: 18px;
@@ -452,6 +478,10 @@ h2 {
 
   .actions {
     display: grid;
+  }
+
+  .challenge-card .ghost-button {
+    justify-self: stretch;
   }
 
   .control-hint {

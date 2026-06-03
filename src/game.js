@@ -1,5 +1,5 @@
 export const runDate = "2026-05-23";
-export const defaultShareUrl = "https://github.com/bte808/fun-20260523-a-time-heist";
+export const defaultShareUrl = "https://bte808.github.io/fun-20260523-a-time-heist/";
 
 export const cases = [
   {
